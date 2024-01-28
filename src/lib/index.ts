@@ -1,1 +1,13 @@
-// place files you want to import through the `$lib` alias in this folder.
+import type { Agent } from '$lib/types';
+
+export class Player {
+    name: string;
+    deck: Array<Agent>;
+
+    consturctor(name: string, deck: Array<Agent>) {
+        this.name = name;
+        this.deck = deck;
+    }
+}
+
+
