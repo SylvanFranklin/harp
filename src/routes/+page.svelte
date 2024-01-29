@@ -8,7 +8,6 @@
 
     const Red = new Player("Red");
     const Blue = new Player("Blue");
-
     let phase: number = 1;
     let turnCount: number = 1;
 
@@ -119,7 +118,7 @@
     }
 </script>
 
-<main class="w-screen h-screen bg-slate-600 pt-10">
+<main class="w-screen h-screen py-20">
     <span class="absolute left-14 top-40">
         <Phaser {phase} {phaseSetter} />
     </span>
