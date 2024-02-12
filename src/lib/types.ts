@@ -1,3 +1,7 @@
+import type { Player } from "./player";
+
+export type AttackFunction = () => void;
+
 export interface Agent {
     name: string;
     cost: number;
@@ -5,6 +9,8 @@ export interface Agent {
     health: number;
     defense: number;
     icon: string;
+    attackFunction(this: Agent, self: Player, opponent: Player, col: number): void;
+    defenseFunction(this: Agent, damage: number, oppenent: Agent): void;
 }
 
 
@@ -15,8 +21,6 @@ export enum GamePhase {
 export const Phases = [
     "Upkeep", "Red Main", "Blue Main", "Attack", "End"
 ]
-
-
 
 export interface Square {
     contents: Agent | null;

@@ -1,33 +1,45 @@
 <script lang="ts">
-    import { GamePhase, type Agent } from "$lib/types";
+    import { type Agent } from "$lib/types";
     import { Player } from "$lib/player";
     import Bank from "$lib/bank.svelte";
     import Hand from "$lib/hand.svelte";
-    import { onMount } from "svelte";
     import Phaser from "$lib/phaser.svelte";
+    import Board from "$lib/board.svelte";
 
     const Red = new Player("Red");
     const Blue = new Player("Blue");
     let phase: number = 1;
     let turnCount: number = 1;
+    let activeLane = -1;
+    let lock = false;
 
-    const phaseSetter = () => {
-        if (phase > 3) {
-            phase = 0;
-        } else {
+    const phaseSetter = async () => {
+        if (lock) return;
+        lock = true;
+
+        if (phase == 1 || phase == 2) {
             phase++;
         }
 
         switch (phase) {
             // upkeep
             case 0:
-                Red.drawCard();
-                Red.hand = Red.hand;
-                Blue.drawCard();
-                Blue.hand = Blue.hand;
+                lock = false;
+                if (Red.hand.length < 8) {
+                    Red.drawCard();
+                    Red.hand = Red.hand;
+                }
+
+                if (Blue.hand.length < 8) {
+                    Blue.drawCard();
+                    Blue.hand = Blue.hand;
+                }
+
+                await new Promise((r) => setTimeout(r, 500));
                 turnCount++;
                 Red.energy = turnCount;
                 Blue.energy = turnCount;
+                phase++;
                 break;
             case 1:
                 // play
@@ -36,32 +48,75 @@
                 break;
             case 3:
                 // fight
+
+                // determine if the board is totally empty, if so reduce the timeout to 200
+
                 for (let i = 0; i < 5; i++) {
-                    console.log(Red.board[i].contents);
-                    if (Red.board[i].contents != null) {
-                        console.log(Blue.board[i].contents);
-                        if (Blue.board[i % 5].contents != null) {
-                            (Red.board[i].contents as Agent).health -= (
-                                Blue.board[i % 5].contents as Agent
-                            ).attack;
-                            (Blue.board[i % 5].contents as Agent).health -= (
-                                Red.board[i].contents as Agent
-                            ).attack;
-                        } else {
-                            Blue.life -= (
-                                Red.board[i].contents as Agent
-                            ).attack;
-                        }
-                    } else if (Blue.board[i % 5].contents != null) {
-                        Red.life -= (
-                            Blue.board[i % 5].contents as Agent
-                        ).attack;
+                    // red
+                    activeLane = i;
+                    let timeout = 700;
+
+                    if (Red.board[i].contents && Blue.board[i + 5].contents) {
+                        timeout = 200;
                     }
+
+                    // await a timeout to allow the animation to play
+                    await new Promise((r) => setTimeout(r, timeout));
+
+                    if (Red.board[i].contents) {
+                        (Red.board[i].contents as Agent).attackFunction(
+                            Red,
+                            Blue,
+                            i,
+                        );
+                    }
+
+                    if (Blue.board[i + 5].contents) {
+                        (Blue.board[i + 5].contents as Agent).attackFunction(
+                            Blue,
+                            Red,
+                            i + 5,
+                        );
+                    }
+
+                    if (Red.board[i].contents) {
+                        if ((Red.board[i].contents as Agent).health <= 0) {
+                            Red.board[i].contents = null;
+                        } else {
+                            Red.board[i] = Red.board[i];
+                        }
+                    }
+
+                    if (Blue.board[i + 5].contents) {
+                        if ((Blue.board[i + 5].contents as Agent).health <= 0) {
+                            Blue.board[i + 5].contents = null;
+                        } else {
+                            Blue.board[i + 5] = Blue.board[i + 5];
+                        }
+                    }
+                    Red.life = Red.life;
+                    Blue.life = Blue.life;
                 }
 
+                activeLane = -1;
+                // go through agents and recalculate health
+
+                // rerender players to update health
+
                 // end
+                phase++;
+                lock = false;
+                phaseSetter();
+                break;
+            case 4:
+                await new Promise((r) => setTimeout(r, 500));
+                phase = 0;
+                lock = false;
+                phaseSetter();
                 break;
         }
+
+        lock = false;
     };
 
     function makePlayable(player: Player, on: boolean) {
@@ -91,8 +146,9 @@
                 Red.activeCardIndex !== null &&
                 Red.hand[Red.activeCardIndex].cost <= Red.energy
             ) {
-                Red.board[index].contents = Red.hand[Red.activeCardIndex];
-                // subtract the enegery, using the card in the hand, rather than the card on the board
+                Red.board[index].contents = {
+                    ...Red.hand[Red.activeCardIndex],
+                } as Agent;
                 Red.energy -= Red.hand[Red.activeCardIndex].cost;
                 Red.hand.splice(Red.activeCardIndex, 1);
 
@@ -106,7 +162,9 @@
                 Blue.activeCardIndex !== null &&
                 Blue.hand[Blue.activeCardIndex].cost <= Blue.energy
             ) {
-                Blue.board[index].contents = Blue.hand[Blue.activeCardIndex];
+                Blue.board[index].contents = {
+                    ...Blue.hand[Blue.activeCardIndex],
+                } as Agent;
                 Blue.energy -= Blue.hand[Blue.activeCardIndex].cost;
                 Blue.hand.splice(Blue.activeCardIndex, 1);
                 Blue.activeCardIndex = null;
@@ -119,82 +177,26 @@
 </script>
 
 <main class="w-screen h-screen py-20">
-    <span class="absolute left-14 top-40">
+    <span class="absolute left-14 top-80">
         <Phaser {phase} {phaseSetter} />
     </span>
     <div class="w-full flex flex-col items-center">
-        <Hand player={Red} {makePlayable} />
+        <Hand player={Red} {makePlayable} active={() => phase == 2} />
         <Bank player={Red} active={() => phase == 2} />
         <div class="grid grid-cols-5 grid-flow-row grid-rows-5 gap-2 w-fit">
-            {#each Red.board as square, index}
-                <button
-                    class={`rounded-md bg-slate-500 w-28 h-28 aspect-square shadow-sm border-red-200/40 overflow-clip 
-                    ${index < 5 ? "border-4" : "border-0"}
-                    ${square.playable && "border-yellow-400"}
-                `}
-                    on:click={() => playCard(Red, index)}
-                >
-                    {#if square.contents}
-                        <div class="border-4 m-2 pt-2 bg-white rounded-lg">
-                            <span class="text-5xl">
-                                {square.contents.icon}
-                            </span>
-                            <div class="flex flex-row-reverse -mb-1 -mr-1">
-                                <p
-                                    class="text-white font-bold rounded-t-sm bg-red-400 w-6 h-6 flex items-center justify-center"
-                                >
-                                    {square.contents.health}
-                                </p>
-                                <p
-                                    class="text-white font-bold rounded-t-sm bg-black w-6 h-6 flex items-center justify-center"
-                                >
-                                    {square.contents.attack}
-                                </p>
-                            </div>
-                        </div>
-                    {/if}
-                </button>
-            {/each}
-            <!---->
-            {#each Array(5).fill({ contents: null, playable: false }) as square}
+            <Board player={Red} {playCard} {activeLane} />
+            {#each Array(5).fill( { contents: null, playable: false }, ) as square, index}
                 <span
-                    class="rounded-md bg-slate-500 w-28 h-28 aspect-square shadow-sm border-0"
+                    class={`${
+                        activeLane == index && "brightness-125"
+                    } rounded-md bg-slate-500 w-28 h-28 aspect-square shadow-sm border-0`}
                 >
                 </span>
             {/each}
-
-            {#each Blue.board as square, index}
-                <button
-                    class={`rounded-md bg-slate-500 w-28 h-28 aspect-square shadow-sm border-blue-200/40 overflow-clip 
-                    ${index >= 5 ? "border-4" : "border-0"}
-                    ${square.playable && "border-yellow-400"}
-                `}
-                    on:click={() => playCard(Blue, index)}
-                >
-                    {#if square.contents}
-                        <div class="border-4 m-2 pt-2 bg-white rounded-lg">
-                            <span class="text-5xl">
-                                {square.contents.icon}
-                            </span>
-                            <div class="flex flex-row-reverse -mb-1 -mr-1">
-                                <p
-                                    class="text-white font-bold rounded-t-sm bg-red-400 w-6 h-6 flex items-center justify-center"
-                                >
-                                    {square.contents.health}
-                                </p>
-                                <p
-                                    class="text-white font-bold rounded-t-sm bg-black w-6 h-6 flex items-center justify-center"
-                                >
-                                    {square.contents.attack}
-                                </p>
-                            </div>
-                        </div>
-                    {/if}
-                </button>
-            {/each}
+            <Board player={Blue} {playCard} {activeLane} />
         </div>
 
         <Bank player={Blue} active={() => phase == 1} />
-        <Hand player={Blue} {makePlayable} />
+        <Hand player={Blue} {makePlayable} active={() => phase == 1} />
     </div>
 </main>

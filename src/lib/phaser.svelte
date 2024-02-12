@@ -1,11 +1,20 @@
 <script lang="ts">
     export let phase: number;
     export let phaseSetter: Function;
+
+    const phaseToColor = (): string => {
+        switch (phase) {
+            case 1:
+                return "bg-blue-500 hover:scale-95 duration-200";
+            case 2:
+                return "bg-red-400 hover:scale-95 duration-200";
+            default:
+                return "bg-gray-600";
+        }
+    };
 </script>
 
-<section
-    class="w-32 border-8 border-white rounded-lg grid grid-cols-1 grid-row-5 bg-white"
->
+<section class="w-32 border-white rounded-lg grid grid-cols-1 grid-row-5">
     <span
         class={`w-full flex items-center justify-center text-white flex-col gap-y-2 text-center text-md font-mono p-2 bg-blue-900 rounded-t-lg ${
             phase === 4 && "scale-105 rounded-md brightness-110"
@@ -98,22 +107,23 @@
     </span>
 </section>
 
-<section
-    class="w-32 border-8 border-white rounded-lg grid grid-cols-1 grid-row-5 bg-white mt-4"
->
-    <button
-        on:click={() => phaseSetter()}
-        class={`w-full flex items-center justify-center text-white flex-col gap-y-2 text-center text-md font-mono rounded-lg p-2 bg-purple-400 hover:scale-105 duration-200`}
-    >
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="text-white w-12 h-12"
-            viewBox="0 0 24 24"
-            ><path
-                fill="currentColor"
-                d="M16.5 17V7q0-.425.288-.712T17.5 6q.425 0 .713.288T18.5 7v10q0 .425-.288.713T17.5 18q-.425 0-.712-.288T16.5 17m-11-.875v-8.25q0-.45.3-.725t.7-.275q.125 0 .275.025t.275.125l6.2 4.15q.225.15.338.363T13.7 12q0 .25-.112.463t-.338.362l-6.2 4.15q-.125.1-.275.125t-.275.025q-.4 0-.7-.275t-.3-.725"
-            /></svg
+<section class="w-32 rounded-lg grid grid-cols-1 grid-row-5 mt-4">
+    {#key phase}
+        <button
+            on:click={() => phaseSetter()}
+            class={`w-full flex items-center justify-center text-white flex-col gap-y-2 text-center text-md font-mono rounded-lg p-2 shadow-md 
+            ${phaseToColor()}`}
         >
-        next
-    </button>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="text-white w-12 h-12"
+                viewBox="0 0 24 24"
+                ><path
+                    fill="currentColor"
+                    d="M16.5 17V7q0-.425.288-.712T17.5 6q.425 0 .713.288T18.5 7v10q0 .425-.288.713T17.5 18q-.425 0-.712-.288T16.5 17m-11-.875v-8.25q0-.45.3-.725t.7-.275q.125 0 .275.025t.275.125l6.2 4.15q.225.15.338.363T13.7 12q0 .25-.112.463t-.338.362l-6.2 4.15q-.125.1-.275.125t-.275.025q-.4 0-.7-.275t-.3-.725"
+                /></svg
+            >
+            pass
+        </button>
+    {/key}
 </section>

@@ -1,6 +1,5 @@
 import type { Agent, Square } from '$lib/types';
-import { MyBad, Angry, Sad, Questioning, Dunk, Sick, Cactus, Squid } from '$lib/agents';
-
+import { MyBad, Angry, Sad, Gun, Questioning, Dunk, Sick, Cactus, Squid, Suds } from '$lib/agents';
 
 export class Player {
     name: string;
@@ -14,7 +13,7 @@ export class Player {
     constructor(name: string) {
         this.name = name;
         this.life = 20;
-        this.energy = 1;
+        this.energy = 10;
         this.deck = this.newDeck();
 
         // initialize board by looping through ten times
@@ -37,6 +36,8 @@ export class Player {
         frequency.set(Dunk, 6);
         frequency.set(Sick, 6);
         frequency.set(Squid, 3);
+        frequency.set(Gun, 3);
+        frequency.set(Suds, 3);
 
         let deck: Array<Agent> = [];
         frequency.forEach((value, key) => {
@@ -75,7 +76,6 @@ export class Player {
         if (this.deck.length === 0) {
             this.deck = this.newDeck();
         }
-
         this.hand.push(this.deck.pop() as Agent);
     }
 
