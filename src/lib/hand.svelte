@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Player } from "$lib/player";
+    import Card from "./card.svelte";
     export let player: Player;
     export let makePlayable: Function;
     export let active: () => boolean;
@@ -35,32 +36,7 @@
             } ${card.cost > player.energy && "opacity-50"}`}
             on:click={() => select(index)}
         >
-            <h2
-                class="text-yellow-400 absolute text-lg font-bold bg-black p-1 rounded-full -ml-2 -mt-3 w-8 h-8 flex items-center justify-center"
-            >
-                {card.cost}
-            </h2>
-            <h1
-                class="w-full text-center text-sm bg-black text-white p-2 rounded-t-lg"
-            >
-                {card.name}
-            </h1>
-
-            <h3 class="text-5xl mt-2">
-                {card.icon}
-            </h3>
-            <div class="flex flex-row-reverse mt-auto rounded-br-lg">
-                <p
-                    class="text-white font-bold rounded-t-sm bg-red-400 w-6 h-6 flex items-center justify-center rounded-br-lg"
-                >
-                    {card.health}
-                </p>
-                <p
-                    class="text-white font-bold rounded-t-sm bg-black w-6 h-6 flex items-center justify-center"
-                >
-                    {card.attack}
-                </p>
-            </div>
+            <Card {card}/>
         </button>
     {/each}
 </ol>
